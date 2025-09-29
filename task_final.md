@@ -68,11 +68,10 @@ SupportWise Inc. requires an AI-powered solution to democratize access to custom
 | ID | Requirement | Method | Type |
 |---|---|---|---|
 | IR-001 | Synchronize with Zendesk API | REST API with incremental sync | External System |
-| IR-002 |  |  |  |
-| IR-003 | Export to business intelligence tools | Standard SQL interface or API | Data Export |
-| IR-004 | Integrate with Slack for notifications | Slack API for alerts | Communication |
-| IR-005 | Support SSO authentication | SAML 2.0 / OAuth 2.0 | Authentication |
-| IR-006 | Connect to multiple LLM providers | Abstracted provider interface | AI Services |
+| IR-002 | Export to business intelligence tools | Standard SQL interface or API | Data Export |
+| IR-003 | Integrate with Slack for notifications | Slack API for alerts | Communication |
+| IR-004 | Support SSO authentication | SAML 2.0 / OAuth 2.0 | Authentication |
+| IR-005 | Connect to multiple LLM providers | Abstracted provider interface | AI Services |
 
 ### Operational Requirements (OR)
 
@@ -81,9 +80,8 @@ SupportWise Inc. requires an AI-powered solution to democratize access to custom
 | OR-001 | Automated backup and recovery | Daily backups with 30-day retention | Disaster Recovery |
 | OR-002 | Monitoring and alerting | Real-time metrics with threshold alerts | Observability |
 | OR-003 | Horizontal scaling capability | Auto-scaling based on load | Infrastructure |
-| OR-004 |  |  |  |
-| OR-005 | Cost tracking per query/user | Detailed usage analytics | Cost Management |
-| OR-006 | Multi-region deployment support | Active-passive DR setup | Geographic Distribution |
+| OR-004 | Cost tracking per query/user | Detailed usage analytics | Cost Management |
+| OR-005 | Multi-region deployment support | Active-passive DR setup | Geographic Distribution |
 
 ### Compliance Requirements (CR)
 
@@ -116,13 +114,13 @@ The architecture follows a modular, event-driven design with clear separation of
 - Orchestrate multiple agents
 - Short-term memory management
 - Connection with the MCP Server
-- **Requirements Addressed**: NFR-004, SR-008, FR-005
+- **Requirements Addressed**: FR-001, FR-005, SR-007, IR-005, OR-002
   
 **MCP (Model Context Protocol) Server**
 - Python framework FastMCP to implement the MCP
 - Resources that provide contextual information to AI applications
 - Prompts templates that help structure interactions with LLM
-- **Requirements Addressed**: NFR-004, SR-008, FR-005  
+- **Requirements Addressed**: FR-003, IR-005  
 
 **Query Processing Pipeline**
 - Framework LangChain to facilitate the integration of LLMs into applications
@@ -142,15 +140,15 @@ The architecture follows a modular, event-driven design with clear separation of
 
 **Integration Layer**
 - Zendesk API connector with incremental sync capabilities
-- Change Data Capture (CDC) pipeline using Debezium/Airbyte
+- Change Data Capture (CDC) pipeline
 - Data validation and transformation services
 - **Requirements Addressed**: IR-001, NFR-005
 
 **Background Processing**
-- Celery task queue for asynchronous job processing
+- Task queue for asynchronous job processing
 - Scheduled jobs for data synchronization and cache warming
 - Result notification service via WebSocket/email
-- **Requirements Addressed**: FR-006, IR-004, OR-005
+- **Requirements Addressed**: FR-006, IR-003, OR-004
 
 ## 2. Data Flow Description
 
@@ -201,15 +199,15 @@ The architecture follows a modular, event-driven design with clear separation of
 
 ### AI/ML Stack
 - **OpenAI GPT-4**: Best-in-class language understanding and SQL generation. Fallback to Claude 3 or open-source models (Llama 3) for redundancy.
-  - *Addresses*: FR-001, FR-004, IR-006
+  - *Addresses*: FR-001, FR-004, IR-005
 - **LangChain**: Abstraction layer for LLM interactions, simplifies prompt management and chain composition.
-  - *Addresses*: IR-006, SR-007
+  - *Addresses*: IR-005, SR-007
 - **Pinecone**: Managed vector database for semantic search, handles scale without operational overhead.
   - *Addresses*: FR-004, NFR-008
 
 ### Application Layer
 - **FastAPI**: Modern Python framework with async support, automatic API documentation, WebSocket support.
-  - *Addresses*: NFR-001, NFR-004, IR-003
+  - *Addresses*: NFR-001, NFR-004, IR-002
 - **Celery + Redis**: Proven task queue combination, supports priority queues and result backends.
   - *Addresses*: FR-006, NFR-002
 - **React + TypeScript**: Type-safe frontend development, rich ecosystem, excellent developer experience.
@@ -383,7 +381,7 @@ CACHE_PATTERNS = {
     "executed_at": "2024-01-15T10:30:00Z",
     "ttl": 3600,
     "hit_count": 5,
-    "cost_estimate": 0.002,  # OR-005: Cost tracking
+    "cost_estimate": 0.002,  # OR-004: Cost tracking
     "data_freshness": "2024-01-15T10:25:00Z"  # NFR-005
 }
 ```
@@ -494,17 +492,17 @@ class ReportTemplate:
         # Dynamically inject current date ranges
         # Apply user preferences for visualization
         # Cache results with user-specific key
-        # Track execution for OR-005 (cost management)
+        # Track execution for OR-004 (cost management)
         pass
 ```
 
 **Natural Language Shortcuts** (FR-008): The system learns from usage patterns. When Brenda asks for the "weekly report," it recognizes this refers to her saved template and automatically applies current date parameters.
 
-**Scheduled Delivery** (FR-006, IR-004): Reports can be scheduled for automatic generation and delivery via email or Slack, with smart scheduling that accounts for data freshness requirements.
+**Scheduled Delivery** (FR-006, IR-003): Reports can be scheduled for automatic generation and delivery via email or Slack, with smart scheduling that accounts for data freshness requirements.
 
 **Version Control**: All saved reports maintain version history, allowing rollback and comparison of report definitions over time.
 
-**Requirements Satisfied**: FR-003, FR-006, FR-008, IR-004
+**Requirements Satisfied**: FR-003, FR-006, FR-008, IR-003
 
 ### 6. Data Visualization Needs
 
@@ -527,7 +525,7 @@ Generating charts from natural language requires careful technical orchestration
 
 Balancing performance with economics through intelligent resource allocation:
 
-**Query Cost Estimation** (OR-005):
+**Query Cost Estimation** (OR-004):
 ```python
 def estimate_query_cost(query_plan):
     factors = {
@@ -541,24 +539,24 @@ def estimate_query_cost(query_plan):
     return cost
 ```
 
-**Tiered Processing** (OR-005):
+**Tiered Processing** (OR-004):
 - Tier 1 (Free): Cached results, simple aggregations (<1000 rows)
 - Tier 2 (Low cost): Direct database queries (<100k rows)
 - Tier 3 (Premium): Spark processing, complex ML analysis
 
-**Cost Optimization Strategies** (OR-003, OR-005):
+**Cost Optimization Strategies** (OR-003, OR-004):
 - Aggressive caching with intelligent invalidation
 - Query result sampling for approximate answers when appropriate
 - Batch similar queries together for processing efficiency
 - Use of spot instances for non-urgent Spark jobs
 
-**Requirements Satisfied**: OR-003, OR-005
+**Requirements Satisfied**: OR-003, OR-004
 
 ### 8. Technology Evolution
 
 Building resilience against the rapidly evolving AI landscape:
 
-**Provider Abstraction Layer** (IR-006):
+**Provider Abstraction Layer** (IR-005):
 ```python
 class LLMProvider(ABC):
     @abstractmethod
@@ -582,7 +580,7 @@ class AnthropicProvider(LLMProvider):
     pass
 ```
 
-**Future-Proofing Architecture** (OR-006):
+**Future-Proofing Architecture** (OR-005):
 - Modular design allowing component substitution
 - Standard interfaces (OpenAPI, GraphQL) for integration
 - Containerized deployments for portability
@@ -594,7 +592,7 @@ class AnthropicProvider(LLMProvider):
 - Automated retraining triggers based on performance metrics
 - Shadow mode testing for new models before production
 
-**Requirements Satisfied**: IR-006, OR-006
+**Requirements Satisfied**: IR-005, OR-005
 
 ## Implementation Roadmap
 
@@ -620,7 +618,7 @@ class AnthropicProvider(LLMProvider):
 - Performance optimization
 
 ### Phase 4: Advanced Features (Weeks 25-32)
-**Target Requirements**: FR-005, FR-006, FR-007, FR-008, IR-003, IR-004, IR-005
+**Target Requirements**: FR-005, FR-006, FR-007, FR-008, IR-002, IR-003, IR-004
 - Scheduled reports
 - Advanced export capabilities
 - Third-party integrations
@@ -634,7 +632,7 @@ class AnthropicProvider(LLMProvider):
 | Data synchronization lag | Medium | Low | Real-time CDC pipeline, monitoring alerts | NFR-005, IR-001 |
 | Query performance degradation | High | Medium | Query optimization, caching, resource scaling | NFR-001, NFR-002 |
 | Security breach | Critical | Low | Defense in depth, regular audits | SR-001 through SR-008 |
-| Cost overrun | Medium | Medium | Usage monitoring, tiered processing | OR-005 |
+| Cost overrun | Medium | Medium | Usage monitoring, tiered processing | OR-004 |
 | Compliance violation | High | Low | Automated compliance checks, audit trails | CR-001 through CR-002 |
 
 ## Success Metrics
@@ -645,7 +643,7 @@ class AnthropicProvider(LLMProvider):
 | System availability | 99.9% | Uptime monitoring | NFR-003 |
 | User adoption rate | 80% of support team | Usage analytics | FR-001, FR-005 |
 | Query accuracy | 99.5% | Manual validation sampling | NFR-007 |
-| Cost per query | < $0.10 average | Cost tracking system | OR-005 |
+| Cost per query | < $0.10 average | Cost tracking system | OR-004 |
 | Data freshness | < 5 minutes | Sync monitoring | NFR-005 |
 | Security incidents | 0 critical/quarter | Security monitoring | SR-001 through SR-008 |
 
