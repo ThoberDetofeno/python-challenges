@@ -81,7 +81,7 @@ SupportWise Inc. requires an AI-powered solution to democratize access to custom
 | OR-001 | Automated backup and recovery | Daily backups with 30-day retention | Disaster Recovery |
 | OR-002 | Monitoring and alerting | Real-time metrics with threshold alerts | Observability |
 | OR-003 | Horizontal scaling capability | Auto-scaling based on load | Infrastructure |
-| OR-004 | Zero-downtime deployments | Blue-green deployment strategy | Deployment |
+| OR-004 |  |  |  |
 | OR-005 | Cost tracking per query/user | Detailed usage analytics | Cost Management |
 | OR-006 | Multi-region deployment support | Active-passive DR setup | Geographic Distribution |
 
@@ -90,9 +90,7 @@ SupportWise Inc. requires an AI-powered solution to democratize access to custom
 | ID | Requirement | Standard | Type |
 |---|---|---|---|
 | CR-001 | GDPR compliance for EU customer data | Right to deletion, data portability | Legal |
-| CR-002 | SOC 2 Type II compliance | Security controls audit | Certification |
-| CR-003 | CCPA compliance for California residents | Privacy rights management | Legal |
-| CR-004 | Data residency requirements | Configurable data location | Regional |
+| CR-002 | Data residency requirements | Configurable data location | Regional |
 
 ## 1. System Architecture Overview
 
@@ -424,7 +422,7 @@ The system implements multiple layers of protection for sensitive business data:
 - Implements row-level security based on user permissions
 - Adds automatic LIMIT clauses to prevent runaway queries
 
-**Data Governance** (SR-006, CR-001, CR-003):
+**Data Governance** (SR-006, CR-001):
 - PII detection and masking using Microsoft Presidio
 - Audit logging of all queries with user attribution
 - Data retention policies aligned with GDPR requirements
@@ -442,7 +440,7 @@ The system implements multiple layers of protection for sensitive business data:
 - Separate LLM contexts for different security levels
 - No direct training on customer data, only on schemas and patterns
 
-**Requirements Satisfied**: SR-001 through SR-008, CR-001, CR-003
+**Requirements Satisfied**: SR-001 through SR-008, CR-001
 
 ### 4. Complex Business Questions
 
@@ -572,13 +570,7 @@ class AnthropicProvider(LLMProvider):
     pass
 ```
 
-**Model Versioning Strategy** (OR-004):
-- Semantic versioning for all model deployments
-- A/B testing framework for gradual rollouts
-- Automated regression testing on golden dataset
-- Rollback capabilities with circuit breakers
-
-**Future-Proofing Architecture** (OR-004, OR-006):
+**Future-Proofing Architecture** (OR-006):
 - Modular design allowing component substitution
 - Standard interfaces (OpenAPI, GraphQL) for integration
 - Containerized deployments for portability
@@ -590,7 +582,7 @@ class AnthropicProvider(LLMProvider):
 - Automated retraining triggers based on performance metrics
 - Shadow mode testing for new models before production
 
-**Requirements Satisfied**: IR-006, OR-004, OR-006
+**Requirements Satisfied**: IR-006, OR-006
 
 ## Implementation Roadmap
 
@@ -631,7 +623,7 @@ class AnthropicProvider(LLMProvider):
 | Query performance degradation | High | Medium | Query optimization, caching, resource scaling | NFR-001, NFR-002 |
 | Security breach | Critical | Low | Defense in depth, regular audits | SR-001 through SR-008 |
 | Cost overrun | Medium | Medium | Usage monitoring, tiered processing | OR-005 |
-| Compliance violation | High | Low | Automated compliance checks, audit trails | CR-001 through CR-004 |
+| Compliance violation | High | Low | Automated compliance checks, audit trails | CR-001 through CR-002 |
 
 ## Success Metrics
 
