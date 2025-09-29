@@ -110,23 +110,35 @@ The architecture follows a modular, event-driven design with clear separation of
 - Session management and user context tracking
 - **Requirements Addressed**: NFR-004, SR-008, FR-005
 
+**AI Agent Platform**
+- LangGraph how agent orchestration engine
+- Ability to create agents for specific tasks
+- Orchestrate multiple agents
+- Short-term memory management
+- Connection with the MCP Server
+- **Requirements Addressed**: NFR-004, SR-008, FR-005
+  
+**MCP (Model Context Protocol) Server**
+- Python framework FastMCP to implement the MCP
+- Resources that provide contextual information to AI applications
+- Prompts templates that help structure interactions with LLM
+- **Requirements Addressed**: NFR-004, SR-008, FR-005  
+
 **Query Processing Pipeline**
-- Natural Language Understanding (NLU) module using OpenAI GPT-4 for intent classification
+- Framework LangChain to facilitate the integration of LLMs into applications
+- Natural Language Understanding (NLU) module using LLM (GPT-4, Claude, Gemini)
 - SQL/query generation layer with validation and safety checks
 - Adaptive query planner choosing between cached, real-time, or batch processing paths
 - **Requirements Addressed**: FR-001, SR-001, SR-007, NFR-001, NFR-002
 
 **Data Layer**
-- PostgreSQL as primary analytical database with TimescaleDB extension for time-series optimization
+- PostgreSQL as primary analytical database
+- Pgvector is a Postgres extension for semantic search over ticket comments (vector database)
 - Redis for caching frequently accessed data and query results
+- Pandas for medium-scale in-memory computations
+- PostgreSQL with TimescaleDB extension (time-series optimization) for processing of historical analyses
 - S3-compatible object storage for historical data archival and large result sets
-- **Requirements Addressed**: NFR-006, NFR-008, SR-003, OR-001
-
-**Analytics Engine**
-- Apache Spark cluster for batch processing of historical analyses
-- Pandas/DuckDB for medium-scale in-memory computations
-- Vector database (Pinecone/Weaviate) for semantic search over ticket comments
-- **Requirements Addressed**: FR-004, NFR-002, NFR-008
+- **Requirements Addressed**: FR-004, NFR-002, NFR-006, NFR-008, SR-003, OR-001
 
 **Integration Layer**
 - Zendesk API connector with incremental sync capabilities
