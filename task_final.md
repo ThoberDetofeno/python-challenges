@@ -122,7 +122,7 @@ The architecture follows a modular, event-driven design with clear separation of
 - Prompts templates that help structure interactions with LLM
 - **Requirements Addressed**: FR-003, IR-005  
 
-**Query Processing Pipeline**
+**Query Processing**
 - Framework LangChain to facilitate the integration of LLMs into applications
 - Natural Language Understanding (NLU) module using LLM (GPT-4, Claude, Gemini)
 - SQL/query generation layer with validation and safety checks
@@ -153,27 +153,29 @@ The architecture follows a modular, event-driven design with clear separation of
 ## 2. Data Flow Description
 
 ### Real-time Query Flow (< 5 seconds response)
-**Case 1**: Basic Reporting
+**Journey 1**: Basic Reporting
 1. **User Input**: Brenda types "How many urgent tickets were created last week?" in the chat interface
 2. **WebSocket Transmission**: Query sent to API gateway via persistent WebSocket connection
-3. **Intent Classification**: NLU module identifies this as a "simple aggregation" query
+3. **Query Classification**: Determining query complexity and routing strategy
 4. **Cache Check**: System checks Redis for recent identical queries (TTL: 1 hour for real-time metrics)
-5. **SQL Generation**: If not cached, LLM generates parameterized SQL query
-6. **Query Execution**: PostgreSQL executes optimized query against indexed columns
-7. **Result Formatting**: Data formatted as JSON with metadata (query time, data freshness)
-8. **Response Delivery**: Result pushed back through WebSocket with typing indicators
+5. **AI Agent**: AI Agent identifies this as a simple query
+6. **SQL Generation**: If not cached, LLM generates parameterized SQL query
+7. **Query Execution**: PostgreSQL executes optimized query against indexed columns
+8. **Pos-Processing**: Result is format as JSON with metadata (query time, data freshness)
+9. **Answer**: Result pushed back through WebSocket
 
-**Case 2**: Business Insights
-1. **User Input**: Brenda types "How many urgent tickets were created last week?" in the chat interface
+**Journey 2**: Business Insights
+1. **User Input**: Brenda types "We saw a 15% spike in 'high' priority tickets last month. What were our customers complaining about?" in the chat interface
 2. **WebSocket Transmission**: Query sent to API gateway via persistent WebSocket connection
-3. **Intent Classification**: NLU module identifies this as a "simple aggregation" query
+3. **Query Classification**: Determining query complexity and routing strategy
 4. **Cache Check**: System checks Redis for recent identical queries (TTL: 1 hour for real-time metrics)
-5. **SQL Generation**: If not cached, LLM generates parameterized SQL query
-6. **Query Execution**: PostgreSQL executes optimized query against indexed columns
-7. **Result Formatting**: Data formatted as JSON with metadata (query time, data freshness)
-8. **Response Delivery**: Result pushed back through WebSocket with typing indicators
+5. **AI Agent**: Identifies this as Resource (MCP Server)
+6. **MCP Server**: Execute the Resource function and return the data needed for this question
+7. **AI Agent**: AI Agent generates the Response
+8. **Pos-Processing**: Result is format as JSON with metadata (query time, data freshness)
+9. **Answer**: Result pushed back through WebSocket
 
-**Requirements Validated**: NFR-001 (< 2 seconds), SR-001 (read-only), NFR-005 (data freshness)
+**Requirements Validated**: NFR-001 (< 5 seconds), SR-001 (read-only), NFR-005 (data freshness)
 
 ### Complex Analysis Flow (Background Processing)
 
