@@ -34,7 +34,7 @@ SupportWise Inc. requires an AI-powered solution to democratize access to custom
 | FR-004 | Analyze sentiment and extract insights from ticket comments | P1 | Advanced Feature |
 | FR-005 | Support follow-up questions with conversation context | P1 | UX Enhancement |
 | FR-006 | Schedule automated report generation and delivery | P2 | Automation |
-| FR-007 | Export visualizations in multiple formats (PNG, SVG, HTML) | P2 | Data Export |
+| FR-007 | Export visualizations in multiple formats (PNG, SVG, HTML, XLSX) | P2 | Data Export |
 | FR-008 | Provide query suggestions based on historical usage | P2 | UX Enhancement |
 
 ### Non-Functional Requirements (NFR)
