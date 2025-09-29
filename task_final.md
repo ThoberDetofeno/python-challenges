@@ -153,7 +153,17 @@ The architecture follows a modular, event-driven design with clear separation of
 ## 2. Data Flow Description
 
 ### Real-time Query Flow (< 5 seconds response)
+**Case 1**: Basic Reporting
+1. **User Input**: Brenda types "How many urgent tickets were created last week?" in the chat interface
+2. **WebSocket Transmission**: Query sent to API gateway via persistent WebSocket connection
+3. **Intent Classification**: NLU module identifies this as a "simple aggregation" query
+4. **Cache Check**: System checks Redis for recent identical queries (TTL: 1 hour for real-time metrics)
+5. **SQL Generation**: If not cached, LLM generates parameterized SQL query
+6. **Query Execution**: PostgreSQL executes optimized query against indexed columns
+7. **Result Formatting**: Data formatted as JSON with metadata (query time, data freshness)
+8. **Response Delivery**: Result pushed back through WebSocket with typing indicators
 
+**Case 2**: Business Insights
 1. **User Input**: Brenda types "How many urgent tickets were created last week?" in the chat interface
 2. **WebSocket Transmission**: Query sent to API gateway via persistent WebSocket connection
 3. **Intent Classification**: NLU module identifies this as a "simple aggregation" query
