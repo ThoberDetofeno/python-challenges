@@ -41,14 +41,14 @@ SupportWise Inc. requires an AI-powered solution to democratize access to custom
 
 | ID | Requirement | Target | Type |
 |---|---|---|---|
-| NFR-001 | Response time for simple queries | < 2 seconds | Performance |
-| NFR-002 | Response time for complex analytical queries | < 30 seconds (with progress updates) | Performance |
+| NFR-001 | Response time for simple queries | < 5 seconds | Performance |
+| NFR-002 | Response time for complex analytical queries | < 45 seconds (with progress updates) | Performance |
 | NFR-003 | System availability | 99.9% uptime | Reliability |
-| NFR-004 | Concurrent user support | 100+ simultaneous users | Scalability |
-| NFR-005 | Data freshness for real-time metrics | < 5 minutes lag | Data Quality |
-| NFR-006 | Historical data retention | 5+ years | Data Management |
+| NFR-004 | Concurrent user support | Max 200 simultaneous users | Scalability |
+| NFR-005 | Data freshness for real-time metrics | < 30 minutes lag | Data Quality |
+| NFR-006 | Historical data retention | Max 3 years | Data Management |
 | NFR-007 | Query result accuracy | 99.5% accuracy vs. manual validation | Data Quality |
-| NFR-008 | Maximum data processing volume | 10M+ tickets, 100M+ comments | Scalability |
+| NFR-008 | Maximum data processing volume | Max 5M tickets, and 100M comments | Scalability |
 
 ### Security Requirements (SR)
 
@@ -68,7 +68,7 @@ SupportWise Inc. requires an AI-powered solution to democratize access to custom
 | ID | Requirement | Method | Type |
 |---|---|---|---|
 | IR-001 | Synchronize with Zendesk API | REST API with incremental sync | External System |
-| IR-002 | Support webhook notifications from Zendesk | Event-driven updates | Real-time Sync |
+| IR-002 |  |  |  |
 | IR-003 | Export to business intelligence tools | Standard SQL interface or API | Data Export |
 | IR-004 | Integrate with Slack for notifications | Slack API for alerts | Communication |
 | IR-005 | Support SSO authentication | SAML 2.0 / OAuth 2.0 | Authentication |
@@ -134,7 +134,7 @@ The architecture follows a modular, event-driven design with clear separation of
 - Zendesk API connector with incremental sync capabilities
 - Change Data Capture (CDC) pipeline using Debezium/Airbyte
 - Data validation and transformation services
-- **Requirements Addressed**: IR-001, IR-002, NFR-005
+- **Requirements Addressed**: IR-001, NFR-005
 
 **Background Processing**
 - Celery task queue for asynchronous job processing
@@ -177,7 +177,7 @@ The architecture follows a modular, event-driven design with clear separation of
 4. **Cache Invalidation**: Invalidate affected cache entries in Redis
 5. **Embedding Updates**: Queue updated comments for re-embedding in vector database
 
-**Requirements Validated**: IR-001, IR-002, NFR-005 (< 5 minutes lag)
+**Requirements Validated**: IR-001, NFR-005 (< 5 minutes lag)
 
 ## 3. Technology Choices
 
