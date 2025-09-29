@@ -1,4 +1,4 @@
-# Technical Design Document: SupportWise AI Co-pilot
+# Technical Design Document: SupportWise AI Copilot
 
 ## Executive Summary
 
