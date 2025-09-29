@@ -14,14 +14,17 @@ For interactive queries, Brenda expects answers in seconds. For deeper analyses 
 ---
 ### Core User Journeys to Support
 Your design should enable Brenda to perform the following tasks by interacting with the AI Co-pilot in a chat interface.
+
 Journey 1: Basic Reporting
 Brenda needs to ask simple, factual questions.
 * Brenda asks: "How many tickets with 'urgent' priority were created last week?"
 * Brenda asks: "What are our oldest unresolved tickets?"
+
 Journey 2: Deeper Business Insights
 Brenda wants to move beyond simple counts to understand the root causes and trends that drive the support metrics.
 * Brenda asks: "We saw a 15% spike in 'high' priority tickets last month. What were our customers complaining about?"
 * Brenda asks: "The product team just launched the 'auto-sync' feature. How is it being received by customers?"
+
 Journey 3: Persistent, Reusable Analyses
 Brenda often needs to create the same report every week.
 * Brenda asks: "Show me a bar chart of tickets created per day last week."
