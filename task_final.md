@@ -533,20 +533,18 @@ When Brenda types "How many urgent tickets did we get last week?", the system in
 
 - **Semantic Layer Construction**: We build a semantic understanding layer on top of raw data:
   ```python
-  # Enrichment pipeline
+  # Pipeline
   ticket_data → sentiment_analysis → entity_extraction → topic_modeling → insight_generation
   ```
 
 - **Multi-Model Sentiment Analysis**:
-  - Real-time: BERT-based sentiment classifier (accuracy: 92%)
-  - Batch: GPT-4 for nuanced sentiment understanding
-  - Results stored as `sentiment_score` (-1 to 1) and `sentiment_confidence` (0 to 1)
+  - Real-time: BERT-based sentiment classifier
+    - Results stored as `sentiment_score` (-1 to 1)
 
 - **Vector Embeddings for Semantic Search**: 
   - Comments are embedded using OpenAI's text-embedding-3-small (1536 dimensions)
   - Stored in pgvector with HNSW indexing for efficient similarity search
-  - Enables queries like "Find all tickets similar to 'auto-sync not working'"
-
+  
 - **Dynamic Feature Extraction**: Using LangChain, we create dynamic analysis chains:
   ```python
   chain = (
@@ -565,8 +563,16 @@ When Brenda types "How many urgent tickets did we get last week?", the system in
 2. Semantic search finds tickets mentioning "auto-sync" or related terms
 3. Sentiment analysis filters for negative sentiment (score < -0.3)
 4. Theme extraction identifies common complaints (data loss, sync delays, confusion)
-5. Statistical analysis shows 73% mention "data loss", 45% mention "slow"
-6. LLM synthesizes: "Customers are primarily frustrated with data loss issues (73% of complaints) and slow synchronization (45%)"
+5. Root cause analysis via LLM: "Customers are primarily frustrated with data loss issues (73% of complaints) and slow synchronization (45%)"
+6. System generates actionable insight with supporting data
+
+**Requirements Addressed**:
+- FR-001 (natural language queries)
+- FR-004 (sentiment analysis)
+- NFR-002 (< 45 seconds for complex analysis)
+- NFR-007 (99.5% accuracy through multi-model validation)
+- NFR-008 (handle 100M comments via vector indexing)
+- IR-005 (multiple LLM providers)
 
 ### 5. Workflow Efficiency
 
