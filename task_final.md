@@ -414,19 +414,16 @@ CACHE_PATTERNS = {
 **Technical Approach**:
 
 When Brenda types "How many urgent tickets did we get last week?", the system initiates a multi-stage pipeline optimized for speed and reliability:
-
 - **WebSocket Connection**: We maintain persistent WebSocket connections to eliminate TCP handshake overhead (saves ~100-200ms per request). The connection includes automatic reconnection logic with exponential backoff to handle network interruptions gracefully.
-
 - **Query Classification Layer**: Using a lightweight classifier (Gemini 2.5 Flash-Lite), we categorize queries in <500ms into simple aggregations, complex analyses, or visualization requests. This early classification enables optimal routing - simple queries bypass heavy processing entirely.
-
 - **Intelligent Caching**: We implement a multi-tier cache strategy using Redis. Query results are cached with intelligent TTLs based on data volatility (real-time metrics: 1 hour, historical analyses: 24 hours). We use query fingerprinting (normalized SQL hash) to identify semantically identical queries despite syntactic differences.
-
-- **Progressive Response Strategy**: For complex queries, we immediately return a job acknowledgment with estimated completion time, then stream progress updates via WebSocket. This prevents timeout issues and manages user expectations.
+- **Simple Query Response**: The AI agent identifies simple queries, generates SQL through the LLM, and executes optimized queries against indexed columns in PostgreSQL.
 
 **Key Technical Challenges Addressed**:
+
 - **Latency Budget Management**: We allocate specific time budgets to each component (LLM: 2s, SQL execution: 2s, network: 500ms, rendering: 500ms) with circuit breakers if any component exceeds its budget.
 - **Error Recovery**: Implement graceful degradation - if the LLM fails, we fall back to keyword-based query matching against common patterns.
-- **Context Preservation**: Session state is maintained in Redis with a sliding window expiration, enabling follow-up questions without re-establishing context.
+
 
 ### 2. Historical Data Challenges
 
