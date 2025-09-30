@@ -225,7 +225,7 @@ The architecture follows a modular, event-driven design with clear separation of
 - **PGVector**: Managed vector database for semantic search, handles scale without operational overhead.
   - Chunking strategy: The strategy should be decided after evaluating the comments size. I believe it will not be necessary to use techniques as a semantic chunking.
   - Semantic search with cosine similarity query
-  - Vectorize & Indexing: IVFFlat (Inverted File with Flat Compression) or HNSW (Hierarchical Navigable Small Worlds)
+  - Vectorize & Indexing: HNSW (Hierarchical Navigable Small Worlds)
   - Embedding: OpenAI **text-embedding-3-small** with 1.536 dimensions
   - *Addresses*: NFR-007, OR-005, NFR-008, OR-004
 - **BERT / spaCy**: Python frameworks and libraries for sentiment analysis
@@ -291,25 +291,16 @@ CREATE TABLE comments (
     created_at TIMESTAMPTZ NOT NULL,
     -- Derived fields for FR-004 (sentiment analysis)
     sentiment_score FLOAT,
-    embedding_id VARCHAR(100),
+    -- Embedding with 1536 dimensions
+    embedding vector(1536), 
     word_count INTEGER GENERATED ALWAYS AS (array_length(string_to_array(content, ' '), 1)) STORED
 );
 
 CREATE INDEX idx_comments_ticket_created ON comments(ticket_id, created_at DESC);
 
--- Materialized view for NFR-001 (performance optimization)
-CREATE MATERIALIZED VIEW daily_ticket_metrics AS
-SELECT 
-    DATE(created_at) as date,
-    status,
-    priority,
-    COUNT(*) as ticket_count,
-    AVG(EXTRACT(EPOCH FROM (resolved_at - created_at))/3600) as avg_resolution_hours
-FROM tickets
-GROUP BY DATE(created_at), status, priority
-WITH DATA;
-
-CREATE UNIQUE INDEX ON daily_ticket_metrics(date, status, priority);
+-- HNSW index for efficient vector search (recommended for production)
+CREATE INDEX idx_comments_embedding_hnsw ON comments
+USING hnsw (embedding vector_cosine_ops);
 
 -- Audit table for SR-005 (compliance logging)
 CREATE TABLE audit_log (
