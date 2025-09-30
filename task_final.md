@@ -4,6 +4,8 @@
 
 This document outlines the technical architecture for SupportWise's AI Co-pilot, an intelligent system that empowers non-technical users to extract actionable insights from Zendesk support data through natural language interactions. The solution balances real-time responsiveness with cost-effectiveness while ensuring data security and system scalability.
 
+*A solução apresentada abaixo é para um MVP rápido sem considerar detalhes muito profundo da solução e uso de algum Cloud ambiente especifico.*
+
 ## Context and Scope
 
 ### Project Context
@@ -118,6 +120,7 @@ The architecture follows a modular, event-driven design with clear separation of
   
 **MCP (Model Context Protocol) Server**
 - Python framework FastMCP to implement the MCP
+- Tools
 - Resources that provide contextual information to AI applications
 - Prompts templates that help structure interactions with LLM
 - **Requirements Addressed**: FR-003, IR-005  
@@ -145,7 +148,7 @@ The architecture follows a modular, event-driven design with clear separation of
 - **Requirements Addressed**: IR-001, NFR-005
 
 **Background Processing**
-- Task queue for asynchronous job processing
+- Celery task queue for asynchronous job processing
 - Scheduled jobs for data synchronization and cache warming
 - Result notification service via WebSocket/email
 - **Requirements Addressed**: FR-006, IR-003, OR-004
@@ -178,26 +181,31 @@ The architecture follows a modular, event-driven design with clear separation of
 **Requirements Validated**: NFR-001 (< 5 seconds), SR-001 (read-only), NFR-005 (data freshness)
 
 ### Complex Analysis Flow (Background Processing)
+**Journey 3**: Persistent, Reusable Analyses 
+1. **User Input**: Brenda types "Show me a bar chart of tickets created per day last week." in the chat interface
+2. **WebSocket Transmission**: Query sent to API gateway via persistent WebSocket connection
+3. **Query Classification**: Determining query complexity and routing strategy
+4. **AI Agent**: Complex Query Detection, system identifies queries requiring historical analysis or ML processing
+5. **MCP Server**: Execute the Tools function and return the artefact with the chart
+6. **AI Agent**: AI Agent generates the Response
+7. **Pos-Processing**: Result is format as JSON with metadata (query time, data freshness)
+8. **Answer**: Result pushed back through WebSocket with the option to salve the artefact and create a schedule job
+9. **User Input**: Brenda select "Schedule job" option to create the same report every week.
+10. **Job Creation**: Job created with query parameters and estimated completion time
+11. **Immediate Acknowledgment**: User receives confirmation with job ID and progress tracking
+12. **Notification**: User notified via UI notification and optional email when complete
 
-1. **Complex Query Detection**: System identifies queries requiring historical analysis or ML processing
-2. **Job Creation**: Spark job created with query parameters and estimated completion time
-3. **Immediate Acknowledgment**: User receives confirmation with job ID and progress tracking
-4. **Distributed Processing**: Spark cluster processes historical data in parallel
-5. **Incremental Updates**: Progress updates sent via WebSocket every 10 seconds
-6. **Result Storage**: Large results stored in S3 with signed URL for retrieval
-7. **Notification**: User notified via UI notification and optional email when complete
-
-**Requirements Validated**: NFR-002 (< 30 seconds with updates), NFR-008 (10M+ tickets)
+**Requirements Validated**: NFR-002 (< 45 seconds with updates), NFR-008 (5M tickets)
 
 ### Data Synchronization Flow
 
-1. **Incremental Sync**: Every 5 minutes, poll Zendesk API for updated tickets/comments
+1. **Incremental Sync**: Every 15 minutes, poll Zendesk API for updated tickets/comments
 2. **CDC Pipeline**: Transform and validate incoming data
 3. **Database Updates**: Upsert changes to PostgreSQL maintaining referential integrity
 4. **Cache Invalidation**: Invalidate affected cache entries in Redis
 5. **Embedding Updates**: Queue updated comments for re-embedding in vector database
 
-**Requirements Validated**: IR-001, NFR-005 (< 5 minutes lag)
+**Requirements Validated**: IR-001, NFR-005 (< 30 minutes lag)
 
 ## 3. Technology Choices
 
