@@ -424,6 +424,14 @@ When Brenda types "How many urgent tickets did we get last week?", the system in
 - **Latency Budget Management**: We allocate specific time budgets to each component (LLM: 2s, SQL execution: 2s, network: 500ms, rendering: 500ms) with circuit breakers if any component exceeds its budget.
 - **Error Recovery**: Implement graceful degradation - if the LLM fails, we fall back to keyword-based query matching against common patterns.
 
+**Requirements Addressed**: 
+- FR-001 (natural language queries)
+- FR-005 (follow-up questions with context)
+- NFR-001 (< 5 seconds response time)
+- NFR-002 (< 45 seconds for complex queries with progress updates)
+- NFR-003 (99.9% availability through fallback mechanisms)
+- SR-004 (TLS encryption for WebSocket)
+- OR-002 (monitoring with circuit breakers)
 
 ### 2. Historical Data Challenges
 
@@ -434,21 +442,11 @@ When Brenda types "How many urgent tickets did we get last week?", the system in
 - **Hybrid Storage Architecture**: We implement a three-tier storage strategy:
   - **Hot Data** (last 90 days): Stored in PostgreSQL with all indexes, optimized for sub-second queries
   - **Warm Data** (90 days - 1 year): PostgreSQL with TimescaleDB compression, 2-5 second query times
-  - **Cold Data** (>1 year): Parquet files in S3, accessed only for batch analyses
+  - **Cold Data** (>1 year): PostgreSQL with aggressive TimescaleDB compression and archived partitions, accessed via background jobs
 
 - **Intelligent Partitioning**: Tables are partitioned by month with automatic partition management. This enables partition pruning, reducing query scope by 90%+ for time-bounded queries.
 
-- **Materialized Views & Aggregations**: We pre-compute common aggregations (daily ticket counts by priority/status) in materialized views, refreshed every 15 minutes. This transforms million-row scans into single-row lookups.
-
-- **Query Optimization Pipeline**:
-  ```sql
-  -- Original query
-  SELECT COUNT(*) FROM tickets WHERE priority = 'urgent' AND created_at > NOW() - INTERVAL '7 days';
-  
-  -- Optimized with partial index
-  CREATE INDEX idx_urgent_recent ON tickets(created_at) 
-  WHERE priority = 'urgent' AND created_at > NOW() - INTERVAL '30 days';
-  ```
+- **Materialized Views & Aggregations**: We pre-compute common aggregations (daily ticket counts by priority/status) in materialized views, refreshed every 30 minutes.
 
 - **Adaptive Query Planning**: The system analyzes query patterns and automatically creates covering indexes for frequently accessed column combinations. We use pg_stat_statements to identify slow queries and optimize them proactively.
 
@@ -456,6 +454,15 @@ When Brenda types "How many urgent tickets did we get last week?", the system in
 - Simple aggregations: <1 second (using materialized views)
 - Time-bounded queries: <5 seconds (partition pruning)
 - Full historical scans: Background processing with progress updates
+
+**Requirements Addressed**:
+- NFR-001 (< 5 seconds for simple queries)
+- NFR-002 (< 45 seconds for complex analyses)
+- NFR-005 (< 30 minutes data freshness via continuous aggregates)
+- NFR-006 (3 years retention with compression)
+- NFR-008 (5M tickets, 100M comments capacity)
+- OR-001 (automated backups with TimescaleDB policies)
+- OR-003 (cost tracking via compression ratios)
 
 ### 3. Business Data Risks
 
@@ -465,7 +472,7 @@ When Brenda types "How many urgent tickets did we get last week?", the system in
 
 - **Read-Only Access Enforcement**: The application connects to PostgreSQL using a read-only role with explicit REVOKE on all write operations. Even if SQL injection occurs, no data modification is possible.
 
-- **Query Validation Pipeline**:
+- **Query Validation Pipeline**: 
   ```python
   def validate_query(sql: str) -> bool:
       # Whitelist allowed operations
@@ -505,6 +512,18 @@ When Brenda types "How many urgent tickets did we get last week?", the system in
 - Data exfiltration → Result size limits + rate limiting
 - Prompt injection → Input sanitization + query validation
 - Compliance violations → Automated GDPR compliance checks
+
+**Requirements Addressed**:
+- SR-001 (read-only access enforcement)
+- SR-002 (RBAC implementation)
+- SR-003 (AES-256 encryption at rest)
+- SR-004 (TLS 1.3 encryption in transit)
+- SR-005 (immutable audit trail)
+- SR-006 (PII masking)
+- SR-007 (prompt injection prevention)
+- SR-008 (rate limiting)
+- CR-001 (GDPR compliance)
+- CR-002 (data residency)
 
 ### 4. Complex Business Questions
 
