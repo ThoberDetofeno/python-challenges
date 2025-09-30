@@ -4,7 +4,7 @@
 
 This document outlines the technical architecture for SupportWise's AI Co-pilot, an intelligent system that empowers non-technical users to extract actionable insights from Zendesk support data through natural language interactions. The solution balances real-time responsiveness with cost-effectiveness while ensuring data security and system scalability.
 
-*A solução apresentada abaixo é para um MVP rápido sem considerar detalhes muito profundo da solução e uso de algum Cloud ambiente especifico.*
+*The solution presented below is intended for a quick MVP, without going into deep implementation details or relying on any specific cloud environment.*
 
 ## Context and Scope
 
@@ -409,6 +409,329 @@ CACHE_PATTERNS = {
 
 ### 1. User Experience Flow
 
+**Challenge**: Creating a seamless experience from natural language input to actionable insight requires orchestrating multiple complex systems while maintaining sub-5-second response times.
+
+**Technical Approach**:
+
+When Brenda types "How many urgent tickets did we get last week?", the system initiates a multi-stage pipeline optimized for speed and reliability:
+
+- **WebSocket Connection**: We maintain persistent WebSocket connections to eliminate TCP handshake overhead (saves ~100-200ms per request). The connection includes automatic reconnection logic with exponential backoff to handle network interruptions gracefully.
+
+- **Query Classification Layer**: Using a lightweight classifier (Gemini 2.5 Flash-Lite), we categorize queries in <500ms into simple aggregations, complex analyses, or visualization requests. This early classification enables optimal routing - simple queries bypass heavy processing entirely.
+
+- **Intelligent Caching**: We implement a multi-tier cache strategy using Redis. Query results are cached with intelligent TTLs based on data volatility (real-time metrics: 1 hour, historical analyses: 24 hours). We use query fingerprinting (normalized SQL hash) to identify semantically identical queries despite syntactic differences.
+
+- **Progressive Response Strategy**: For complex queries, we immediately return a job acknowledgment with estimated completion time, then stream progress updates via WebSocket. This prevents timeout issues and manages user expectations.
+
+**Key Technical Challenges Addressed**:
+- **Latency Budget Management**: We allocate specific time budgets to each component (LLM: 2s, SQL execution: 2s, network: 500ms, rendering: 500ms) with circuit breakers if any component exceeds its budget.
+- **Error Recovery**: Implement graceful degradation - if the LLM fails, we fall back to keyword-based query matching against common patterns.
+- **Context Preservation**: Session state is maintained in Redis with a sliding window expiration, enabling follow-up questions without re-establishing context.
+
+### 2. Historical Data Challenges
+
+**Challenge**: Analyzing millions of tickets spanning years while maintaining interactive response times requires sophisticated data architecture and query optimization.
+
+**Technical Approach**:
+
+- **Hybrid Storage Architecture**: We implement a three-tier storage strategy:
+  - **Hot Data** (last 90 days): Stored in PostgreSQL with all indexes, optimized for sub-second queries
+  - **Warm Data** (90 days - 1 year): PostgreSQL with TimescaleDB compression, 2-5 second query times
+  - **Cold Data** (>1 year): Parquet files in S3, accessed only for batch analyses
+
+- **Intelligent Partitioning**: Tables are partitioned by month with automatic partition management. This enables partition pruning, reducing query scope by 90%+ for time-bounded queries.
+
+- **Materialized Views & Aggregations**: We pre-compute common aggregations (daily ticket counts by priority/status) in materialized views, refreshed every 15 minutes. This transforms million-row scans into single-row lookups.
+
+- **Query Optimization Pipeline**:
+  ```sql
+  -- Original query
+  SELECT COUNT(*) FROM tickets WHERE priority = 'urgent' AND created_at > NOW() - INTERVAL '7 days';
+  
+  -- Optimized with partial index
+  CREATE INDEX idx_urgent_recent ON tickets(created_at) 
+  WHERE priority = 'urgent' AND created_at > NOW() - INTERVAL '30 days';
+  ```
+
+- **Adaptive Query Planning**: The system analyzes query patterns and automatically creates covering indexes for frequently accessed column combinations. We use pg_stat_statements to identify slow queries and optimize them proactively.
+
+**Performance Guarantees**:
+- Simple aggregations: <1 second (using materialized views)
+- Time-bounded queries: <5 seconds (partition pruning)
+- Full historical scans: Background processing with progress updates
+
+### 3. Business Data Risks
+
+**Challenge**: The system has access to sensitive customer communications and operational metrics. Careless implementation could lead to data breaches, compliance violations, or business intelligence leaks.
+
+**Technical Safeguards**:
+
+- **Read-Only Access Enforcement**: The application connects to PostgreSQL using a read-only role with explicit REVOKE on all write operations. Even if SQL injection occurs, no data modification is possible.
+
+- **Query Validation Pipeline**:
+  ```python
+  def validate_query(sql: str) -> bool:
+      # Whitelist allowed operations
+      if not sql.strip().upper().startswith(('SELECT', 'WITH')):
+          return False
+      
+      # Blacklist dangerous patterns
+      dangerous_patterns = ['DROP', 'DELETE', 'UPDATE', 'INSERT', 'ALTER', 'GRANT']
+      if any(pattern in sql.upper() for pattern in dangerous_patterns):
+          return False
+      
+      # Validate against SQL parser
+      try:
+          parsed = sqlparse.parse(sql)[0]
+          # Additional AST validation
+      except:
+          return False
+      
+      return True
+  ```
+
+- **PII Protection Layer**: We implement automatic PII detection using spaCy's named entity recognition. Detected PII is either masked or excluded based on user permissions:
+  ```python
+  # Example: "Customer John Smith (john@example.com) complained..."
+  # Becomes: "Customer [REDACTED] ([REDACTED]) complained..."
+  ```
+
+- **Audit Trail**: Every query is logged with user ID, timestamp, query text, result count, and execution time in an immutable audit table. This provides forensic capability and compliance evidence.
+
+- **Data Access Governance**:
+  - Role-based access control with JWT tokens containing permission claims
+  - Row-level security for multi-tenant scenarios
+  - Encryption at rest (AES-256) and in transit (TLS 1.3)
+
+**Risk Mitigation Matrix**:
+- Unauthorized access → OAuth/SAML SSO + MFA
+- Data exfiltration → Result size limits + rate limiting
+- Prompt injection → Input sanitization + query validation
+- Compliance violations → Automated GDPR compliance checks
+
+### 4. Complex Business Questions
+
+**Challenge**: Questions like "Why are customers unhappy with our new feature?" require understanding sentiment, identifying patterns, and correlating multiple data points - capabilities not present in raw ticket data.
+
+**Technical Approach**:
+
+- **Semantic Layer Construction**: We build a semantic understanding layer on top of raw data:
+  ```python
+  # Enrichment pipeline
+  ticket_data → sentiment_analysis → entity_extraction → topic_modeling → insight_generation
+  ```
+
+- **Multi-Model Sentiment Analysis**:
+  - Real-time: BERT-based sentiment classifier (accuracy: 92%)
+  - Batch: GPT-4 for nuanced sentiment understanding
+  - Results stored as `sentiment_score` (-1 to 1) and `sentiment_confidence` (0 to 1)
+
+- **Vector Embeddings for Semantic Search**: 
+  - Comments are embedded using OpenAI's text-embedding-3-small (1536 dimensions)
+  - Stored in pgvector with HNSW indexing for efficient similarity search
+  - Enables queries like "Find all tickets similar to 'auto-sync not working'"
+
+- **Dynamic Feature Extraction**: Using LangChain, we create dynamic analysis chains:
+  ```python
+  chain = (
+      semantic_search
+      | sentiment_filter
+      | theme_extraction
+      | root_cause_analysis
+      | summary_generation
+  )
+  ```
+
+- **Contextual Understanding**: The AI agent maintains conversation context, understanding that "the new feature" refers to "auto-sync" based on previous interactions or temporal correlation with feature release dates.
+
+**Example Processing Flow**:
+1. Query: "Why are customers unhappy with auto-sync?"
+2. Semantic search finds tickets mentioning "auto-sync" or related terms
+3. Sentiment analysis filters for negative sentiment (score < -0.3)
+4. Theme extraction identifies common complaints (data loss, sync delays, confusion)
+5. Statistical analysis shows 73% mention "data loss", 45% mention "slow"
+6. LLM synthesizes: "Customers are primarily frustrated with data loss issues (73% of complaints) and slow synchronization (45%)"
+
+### 5. Workflow Efficiency
+
+**Challenge**: Repetitive report generation wastes valuable time and introduces human error. The system must enable report templates while maintaining flexibility.
+
+**Solution Architecture**:
+
+- **Report Template System**:
+  ```python
+  class ReportTemplate:
+      def __init__(self, name: str, query_template: str, parameters: dict):
+          self.name = name
+          self.query_template = query_template  # SQL with placeholders
+          self.parameters = parameters  # Default values
+          self.schedule = None  # Optional cron expression
+      
+      def execute(self, override_params: dict = {}):
+          params = {**self.parameters, **override_params}
+          # Dynamic parameter injection with validation
+          return self.render_and_execute(params)
+  ```
+
+- **Intelligent Parameterization**: The system automatically identifies variable components in queries:
+  - Dates: "last week" → `{start_date}` to `{end_date}`
+  - Filters: "urgent tickets" → `{priority_filter}`
+  - Groupings: "by day" → `{time_bucket}`
+
+- **Natural Language Scheduling**: Users can say "Run this every Monday at 9 AM" which translates to cron expression `0 9 * * 1`
+
+- **Version Control for Reports**: Templates are versioned with Git-like semantics, enabling rollback and change tracking
+
+- **Smart Suggestions**: Based on query history, the system proactively suggests:
+  - "You run similar reports every Monday. Would you like to save this as 'Weekly Priority Report'?"
+  - "This report is similar to 'Daily Metrics'. Would you like to use that template?"
+
+**Implementation Details**:
+- Templates stored in PostgreSQL with JSONB for flexible schema
+- Celery Beat for scheduled execution
+- Results delivered via email/Slack with configurable formats
+- Automatic report optimization based on execution patterns
+
+### 6. Data Visualization Needs
+
+**Challenge**: Generating dynamic, interactive visualizations from natural language requests requires understanding visualization intent and handling various data shapes.
+
+**Technical Solution**:
+
+- **Visualization Intent Detection**: Using Claude 4's capability to generate structured outputs:
+  ```python
+  # LLM interprets: "show me a bar chart of tickets by priority"
+  visualization_spec = {
+      "type": "bar",
+      "x_axis": "priority",
+      "y_axis": "count",
+      "title": "Tickets by Priority",
+      "color_scheme": "categorical"
+  }
+  ```
+
+- **Multi-Format Rendering Pipeline**:
+  - Server-side: Matplotlib for static images (PNG/SVG)
+  - Client-side: D3.js/Recharts for interactive charts
+  - Hybrid: Server generates data structure, client renders
+
+- **Adaptive Visualization Selection**: The system automatically selects appropriate visualization types based on data characteristics:
+  - Time series → Line chart
+  - Categorical comparison → Bar chart
+  - Part-of-whole → Pie chart
+  - Correlation → Scatter plot
+
+- **Chart Artifact Generation**: Using Claude 4's artifact capability to generate complete HTML/JS visualization code that can be embedded or exported
+
+**Technical Challenges Addressed**:
+- **Large Dataset Handling**: Automatic data sampling/aggregation for datasets >10,000 points
+- **Responsive Design**: Charts automatically adapt to container size
+- **Accessibility**: All charts include ARIA labels and keyboard navigation
+- **Export Options**: PNG (reports), SVG (presentations), HTML (interactive dashboards)
+
+### 7. Operational Cost Management
+
+**Challenge**: Query costs vary by 1000x between simple lookups and complex AI analyses. Without careful management, costs could spiral out of control.
+
+**Cost Optimization Strategy**:
+
+- **Tiered Processing Model**:
+  ```python
+  COST_TIERS = {
+      "cache_hit": 0.0001,      # Redis lookup only
+      "simple_sql": 0.001,       # Direct SQL query
+      "complex_sql": 0.01,       # Multi-table joins
+      "llm_simple": 0.02,        # Gemini Flash
+      "llm_complex": 0.10,       # Claude 4
+      "embedding_search": 0.05,   # Vector similarity
+      "batch_analysis": 0.50     # Full historical scan
+  }
+  ```
+
+- **Intelligent Router**: Queries are routed to the most cost-effective processor:
+  - Exact match previous queries → Cache (free)
+  - Simple aggregations → SQL only (no LLM)
+  - Known patterns → Template execution
+  - Complex questions → Full LLM pipeline
+
+- **Cost Budget Management**:
+  - Per-user daily budgets with soft/hard limits
+  - Department-level cost allocation
+  - Real-time cost tracking with warnings at 80% budget
+
+- **Optimization Techniques**:
+  - Query result caching (reduces cost by 60%)
+  - Batch processing for non-urgent queries
+  - Incremental computation for time-series data
+  - LLM prompt optimization (shorter prompts = lower cost)
+
+**Cost Monitoring Dashboard**:
+- Real-time cost per query
+- User/department cost attribution
+- Cost trend analysis
+- ROI metrics (time saved vs. cost incurred)
+
+### 8. Technology Evolution
+
+**Challenge**: The AI landscape changes rapidly - models deprecate, new capabilities emerge, and providers experience outages. The architecture must remain stable despite this volatility.
+
+**Future-Proofing Strategy**:
+
+- **Provider Abstraction Layer**:
+  ```python
+  class LLMProvider(ABC):
+      @abstractmethod
+      def generate(self, prompt: str, **kwargs) -> str:
+          pass
+  
+  class OpenAIProvider(LLMProvider):
+      def generate(self, prompt: str, **kwargs) -> str:
+          # OpenAI-specific implementation
+  
+  class AnthropicProvider(LLMProvider):
+      def generate(self, prompt: str, **kwargs) -> str:
+          # Anthropic-specific implementation
+  ```
+
+- **Multi-Provider Fallback Chain**:
+  - Primary: Claude 4 (best quality)
+  - Secondary: GPT-4 (fallback)
+  - Tertiary: Gemini (cost-optimized)
+  - Emergency: Cached responses + template matching
+
+- **Version-Agnostic Interfaces**: All AI interactions go through standardized interfaces that hide provider-specific details
+
+- **Capability Detection**: System automatically detects and adapts to available model capabilities:
+  ```python
+  capabilities = {
+      "supports_artifacts": ["claude-3.5"],
+      "supports_function_calling": ["gpt-4", "claude-3.5"],
+      "supports_streaming": ["gpt-4", "claude-3.5", "gemini"],
+      "max_context_window": {"gpt-4": 128000, "claude-3.5": 200000}
+  }
+  ```
+
+- **Gradual Migration Path**: New models are tested in shadow mode (parallel execution without user impact) before promotion
+
+- **Model Performance Tracking**: Continuous monitoring of model performance enables data-driven provider selection:
+  - Response time percentiles
+  - Accuracy metrics
+  - Cost per query
+  - Error rates
+
+**Adaptation Mechanisms**:
+- Feature flags for instant provider switching
+- A/B testing framework for new models
+- Automated fallback on provider outage
+- Regular model retraining/fine-tuning pipeline
+
+This architecture ensures the system remains functional and performant regardless of changes in the AI ecosystem, while enabling rapid adoption of new capabilities as they become available.
+
+
+## 5. Detailed Technical Explanations
+
+### 1. User Experience Flow
+
 When Brenda types "How many urgent tickets did we get last week?", the system orchestrates a seamless experience through several technical innovations:
 
 **Instant Feedback Loop** (NFR-001): The WebSocket connection provides immediate acknowledgment with a typing indicator, maintaining user engagement. The system performs intent classification in parallel with query generation, typically completing both within 200ms.
@@ -628,12 +951,12 @@ class AnthropicProvider(LLMProvider):
 
 | Metric | Target | Measurement Method | Related Requirements |
 |---|---|---|---|
-| Query response time (P95) | < 2 seconds | Application metrics | NFR-001 |
+| Query response time (P95) | < 5 seconds | Application metrics | NFR-001 |
 | System availability | 99.9% | Uptime monitoring | NFR-003 |
 | User adoption rate | 80% of support team | Usage analytics | FR-001, FR-005 |
 | Query accuracy | 99.5% | Manual validation sampling | NFR-007 |
 | Cost per query | < $0.10 average | Cost tracking system | OR-003 |
-| Data freshness | < 5 minutes | Sync monitoring | NFR-005 |
+| Data freshness | < 30 minutes | Sync monitoring | NFR-005 |
 | Security incidents | 0 critical/quarter | Security monitoring | SR-001 through SR-008 |
 
 ## Conclusion
