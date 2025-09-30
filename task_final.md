@@ -688,27 +688,20 @@ When Brenda types "How many urgent tickets did we get last week?", the system in
 - Cost trend analysis
 - ROI metrics (time saved vs. cost incurred)
 
+**Requirements Addressed**:
+- OR-003 (cost tracking per query/user)
+- NFR-001 (< 5 seconds through caching)
+- NFR-002 (< 45 seconds through batch processing)
+- NFR-004 (200 concurrent users with budget limits)
+- IR-005 (multi-LLM with cost optimization)
+
 ### 8. Technology Evolution
 
 **Challenge**: The AI landscape changes rapidly - models deprecate, new capabilities emerge, and providers experience outages. The architecture must remain stable despite this volatility.
 
 **Future-Proofing Strategy**:
 
-- **Provider Abstraction Layer**:
-  ```python
-  class LLMProvider(ABC):
-      @abstractmethod
-      def generate(self, prompt: str, **kwargs) -> str:
-          pass
-  
-  class OpenAIProvider(LLMProvider):
-      def generate(self, prompt: str, **kwargs) -> str:
-          # OpenAI-specific implementation
-  
-  class AnthropicProvider(LLMProvider):
-      def generate(self, prompt: str, **kwargs) -> str:
-          # Anthropic-specific implementation
-  ```
+- **Provider Abstraction Layer**: Software design pattern that creates a unified interface between an application and multiple underlying service providers or implementations. It acts as an intermediary that abstracts away the differences between various providers.
 
 - **Multi-Provider Fallback Chain**:
   - Primary: Claude 4 (best quality)
@@ -719,14 +712,6 @@ When Brenda types "How many urgent tickets did we get last week?", the system in
 - **Version-Agnostic Interfaces**: All AI interactions go through standardized interfaces that hide provider-specific details
 
 - **Capability Detection**: System automatically detects and adapts to available model capabilities:
-  ```python
-  capabilities = {
-      "supports_artifacts": ["claude-3.5"],
-      "supports_function_calling": ["gpt-4", "claude-3.5"],
-      "supports_streaming": ["gpt-4", "claude-3.5", "gemini"],
-      "max_context_window": {"gpt-4": 128000, "claude-3.5": 200000}
-  }
-  ```
 
 - **Gradual Migration Path**: New models are tested in shadow mode (parallel execution without user impact) before promotion
 
@@ -740,218 +725,16 @@ When Brenda types "How many urgent tickets did we get last week?", the system in
 - Feature flags for instant provider switching
 - A/B testing framework for new models
 - Automated fallback on provider outage
-- Regular model retraining/fine-tuning pipeline
+- Regular model retraining
 
+**Requirements Addressed**:
+- IR-005 (multiple LLM providers)
+- NFR-003 (99.9% availability through fallbacks)
+- OR-002 (monitoring and alerting)
+- OR-004 (multi-region support)
+- NFR-001 & NFR-002 (performance through optimal model selection)
+ 
 This architecture ensures the system remains functional and performant regardless of changes in the AI ecosystem, while enabling rapid adoption of new capabilities as they become available.
-
-
-## 5. Detailed Technical Explanations
-
-### 1. User Experience Flow
-
-When Brenda types "How many urgent tickets did we get last week?", the system orchestrates a seamless experience through several technical innovations:
-
-**Instant Feedback Loop** (NFR-001): The WebSocket connection provides immediate acknowledgment with a typing indicator, maintaining user engagement. The system performs intent classification in parallel with query generation, typically completing both within 200ms.
-
-**Progressive Enhancement** (FR-005): For complex queries, we implement a progressive disclosure pattern. Simple counts return immediately from cached aggregations, while the system continues processing deeper insights in the background, streaming additional findings as they become available.
-
-**Error Recovery** (NFR-003): The system implements graceful degradation. If GPT-4 fails, we fallback to Claude 3 or a fine-tuned Llama model. If SQL generation produces an invalid query, we attempt repair using error messages as context, falling back to pre-built query templates for common patterns.
-
-**Context Preservation** (FR-005): Each session maintains conversation context in Redis, allowing follow-up questions like "break that down by product area" without repeating the original query parameters.
-
-**Requirements Satisfied**: FR-001, FR-005, NFR-001, NFR-003
-
-### 2. Historical Data Challenges
-
-Managing millions of historical records while maintaining sub-second response times requires a multi-layered approach:
-
-**Hierarchical Storage Strategy** (NFR-006, NFR-008): 
-- Hot data (last 30 days): PostgreSQL with all indexes
-- Warm data (30 days - 1 year): PostgreSQL with reduced indexes, compressed
-- Cold data (>1 year): Parquet files in S3, queryable via DuckDB when needed
-
-**Intelligent Pre-aggregation** (NFR-001): A background process continuously maintains materialized views for common query patterns identified through usage analytics. These views are refreshed incrementally using PostgreSQL's REFRESH MATERIALIZED VIEW CONCURRENTLY.
-
-**Query Routing Intelligence** (NFR-002): The query planner analyzes the time range and complexity to route appropriately:
-- Recent data + simple aggregation → Direct PostgreSQL query
-- Historical data + complex analysis → Spark job with progress tracking
-- Mixed timeframe → Hybrid approach with immediate partial results
-
-**Adaptive Caching** (NFR-005): Cache TTLs adjust based on data volatility. Today's metrics cache for 5 minutes, last week's for 1 hour, last year's for 24 hours.
-
-**Requirements Satisfied**: NFR-001, NFR-002, NFR-005, NFR-006, NFR-008
-
-### 3. Business Data Risks
-
-The system implements multiple layers of protection for sensitive business data:
-
-**Query Sanitization** (SR-001, SR-007): All LLM-generated SQL passes through a validation layer that:
-- Enforces read-only operations (SELECT only)
-- Validates against a whitelist of allowed tables/columns
-- Implements row-level security based on user permissions
-- Adds automatic LIMIT clauses to prevent runaway queries
-
-**Data Governance** (SR-006, CR-001):
-- PII detection and masking using Microsoft Presidio
-- Audit logging of all queries with user attribution
-- Data retention policies aligned with GDPR requirements
-- Encryption at rest (AES-256) and in transit (TLS 1.3)
-
-**Access Control** (SR-002, SR-008):
-- Role-based access control (RBAC) with granular permissions
-- Multi-factor authentication for administrative functions
-- API rate limiting per user/role to prevent abuse
-- Temporary access tokens with automatic expiration
-
-**LLM Safety** (SR-007):
-- Prompt injection detection using known pattern matching
-- Output validation ensuring responses don't leak sensitive data
-- Separate LLM contexts for different security levels
-- No direct training on customer data, only on schemas and patterns
-
-**Requirements Satisfied**: SR-001 through SR-008, CR-001
-
-### 4. Complex Business Questions
-
-Enabling answers to nuanced questions like "Why are customers unhappy with our new feature?" requires sophisticated analysis:
-
-**Multi-stage Processing Pipeline** (FR-004):
-1. Entity extraction: Identify "new feature" references in tickets using NER
-2. Sentiment analysis: Score each comment using fine-tuned BERT model
-3. Topic modeling: LDA/BERT-based clustering to identify complaint themes
-4. Temporal analysis: Correlation with feature release dates
-5. Summarization: GPT-4 synthesizes findings into actionable insights
-
-**Semantic Search Infrastructure** (FR-004, NFR-007): 
-- All comments embedded using sentence-transformers (all-MiniLM-L6-v2)
-- Stored in Pinecone with metadata filters for time ranges and ticket properties
-- Hybrid search combining vector similarity with keyword matching
-
-**Causal Analysis Framework** (NFR-007):
-- Statistical correlation between ticket spikes and product events
-- A/B test analysis when customer segments are available
-- Cohort analysis comparing pre/post feature launch metrics
-
-**Requirements Satisfied**: FR-004, NFR-007
-
-### 5. Workflow Efficiency
-
-Solving Brenda's repetitive reporting needs through intelligent automation:
-
-**Report Template System** (FR-003, FR-006):
-```python
-class ReportTemplate:
-    def __init__(self, name: str, query_pattern: str):
-        self.name = name
-        self.query_pattern = query_pattern
-        self.parameters = self.extract_parameters()
-        self.schedule = None  # FR-006: Optional cron schedule
-    
-    def execute(self, context: Dict):
-        # Dynamically inject current date ranges
-        # Apply user preferences for visualization
-        # Cache results with user-specific key
-        # Track execution for OR-003 (cost management)
-        pass
-```
-
-**Natural Language Shortcuts** (FR-008): The system learns from usage patterns. When Brenda asks for the "weekly report," it recognizes this refers to her saved template and automatically applies current date parameters.
-
-**Scheduled Delivery** (FR-006, IR-003): Reports can be scheduled for automatic generation and delivery via email or Slack, with smart scheduling that accounts for data freshness requirements.
-
-**Version Control**: All saved reports maintain version history, allowing rollback and comparison of report definitions over time.
-
-**Requirements Satisfied**: FR-003, FR-006, FR-008, IR-003
-
-### 6. Data Visualization Needs
-
-Generating charts from natural language requires careful technical orchestration:
-
-**Visualization Pipeline** (FR-002, FR-007):
-1. Chart type inference from query context using few-shot prompting
-2. Data transformation to appropriate format (wide vs. long format)
-3. Server-side rendering using Plotly/Matplotlib for consistency
-4. SVG generation with responsive sizing
-5. Optional interactive features via Plotly.js
-
-**Smart Defaults**: The system maintains user preferences for color schemes, chart types, and formatting, applying these automatically unless overridden.
-
-**Export Capabilities** (FR-007): All visualizations can be exported as PNG, SVG, or interactive HTML, with embedded data tables for accessibility.
-
-**Requirements Satisfied**: FR-002, FR-007
-
-### 7. Operational Cost Management
-
-Balancing performance with economics through intelligent resource allocation:
-
-**Query Cost Estimation** (OR-003):
-```python
-def estimate_query_cost(query_plan):
-    factors = {
-        'data_volume': query_plan.estimated_rows,
-        'computation_complexity': query_plan.operations_count,
-        'llm_tokens': query_plan.estimated_tokens,
-        'cache_hit_probability': query_plan.cache_likelihood
-    }
-    cost = calculate_weighted_cost(factors)
-    # Track against user/department budgets
-    return cost
-```
-
-**Tiered Processing** (OR-003):
-- Tier 1 (Free): Cached results, simple aggregations (<1000 rows)
-- Tier 2 (Low cost): Direct database queries (<100k rows)
-- Tier 3 (Premium): Spark processing, complex ML analysis
-
-**Cost Optimization Strategies** ( OR-003):
-- Aggressive caching with intelligent invalidation
-- Query result sampling for approximate answers when appropriate
-- Batch similar queries together for processing efficiency
-- Use of spot instances for non-urgent Spark jobs
-
-**Requirements Satisfied**: OR-003
-
-### 8. Technology Evolution
-
-Building resilience against the rapidly evolving AI landscape:
-
-**Provider Abstraction Layer** (IR-005):
-```python
-class LLMProvider(ABC):
-    @abstractmethod
-    def generate_sql(self, prompt: str) -> str:
-        pass
-    
-    @abstractmethod
-    def analyze_sentiment(self, text: str) -> float:
-        pass
-    
-    def health_check(self) -> bool:
-        # OR-002: Monitoring integration
-        pass
-
-class OpenAIProvider(LLMProvider):
-    # Implementation with fallback handling
-    pass
-
-class AnthropicProvider(LLMProvider):
-    # Implementation
-    pass
-```
-
-**Future-Proofing Architecture** (OR-004):
-- Modular design allowing component substitution
-- Standard interfaces (OpenAPI, GraphQL) for integration
-- Containerized deployments for portability
-- Event-driven architecture enabling easy extension
-
-**Continuous Learning Pipeline**:
-- Collect user feedback on query results
-- Fine-tune models on successful query patterns
-- Automated retraining triggers based on performance metrics
-- Shadow mode testing for new models before production
-
-**Requirements Satisfied**: IR-005, OR-004
 
 ## Risk Assessment & Mitigation
 
