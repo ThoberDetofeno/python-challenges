@@ -366,7 +366,7 @@ class SavedReport(BaseModel):
     name: str = Field(..., max_length=255)
     query_template: str
     parameters: Dict[str, Any]
-    schedule: Optional[str]  # FR-006: cron expression
+    schedule: Optional[str]  # FR-006
     created_by: str
     created_at: datetime
     last_run: Optional[datetime]
@@ -374,7 +374,7 @@ class SavedReport(BaseModel):
 
 class VisualizationRequest(BaseModel):
     data: List[Dict[str, Any]]
-    chart_type: str  # "bar", "line", "pie", etc.
+    artefact_type: str  # "chart", "html", etc.
     options: Dict[str, Any]
     export_format: Optional[str]  # FR-007: "png", "svg", "html"
 ```
