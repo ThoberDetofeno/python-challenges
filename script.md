@@ -20,15 +20,15 @@ Let me show you ... how I solved this challenge.. and the important decisions I 
 The main challenge is helping Brenda, the Head of Support. She needs to get information from millions of Zendesk tickets from many years using normal language.
 
 The system must handle three main tasks:
-- Simple reports that return answers in less than 5 seconds
-- Complex business questions that need AI analysis
-- Reports that can be saved and reused to save time
+- first.... Simple reports that return answers in less than 5 seconds
+- secund...Complex business questions that need AI analysis
+- 3.... Reports that can be saved and reused... to save time
 
 ---
 
 ## Architecture Overview (1:00-2:00)
 
-My solution for this problme uses separate modules that work together and communicate through events.
+My solution for this problme uses separate modules.... that work together and communicate through events.
 
 For the User Interface, I use React with WebSocket connections for real-time updates. The API Gateway, built with FastAPI, manages requests and user sessions.
 
