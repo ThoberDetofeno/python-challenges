@@ -246,7 +246,7 @@ The architecture follows a modular, event-driven design with clear separation of
 ### Data Pipeline
 - **Airbyte**: Open-source data integration with Zendesk connector, handles schema evolution gracefully.
   - *Addresses*: IR-001, NFR-005
-- **dbt**: SQL-based transformation framework for maintaining data quality and lineage.
+- **dbt**: SQL-based transformation framework for maintaining data quality.
   - *Addresses*: NFR-007, SR-005
 
 ### Observability
@@ -625,6 +625,7 @@ When Brenda types "How many urgent tickets did we get last week?", the system in
       "title": "Tickets by Priority",
       "color_scheme": "categorical"
   }
+  ## LL return: HTML/JS artefact with bar chart
   ```
 
 - **Multi-Format Rendering Pipeline**:
@@ -641,7 +642,7 @@ When Brenda types "How many urgent tickets did we get last week?", the system in
 - **Chart Artifact Generation**: Using Claude 4's artifact capability to generate complete HTML/JS visualization code that can be embedded or exported
 
 **Technical Challenges Addressed**:
-- **Large Dataset Handling**: Automatic data sampling/aggregation for datasets >10,000 points
+- **Large Dataset Handling**: Automatic data sampling/aggregation for datasets >1,000 points
 - **Responsive Design**: Charts automatically adapt to container size
 - **Accessibility**: All charts include ARIA labels and keyboard navigation
 - **Export Options**: PNG (reports), SVG (presentations), HTML (interactive dashboards)
@@ -762,7 +763,3 @@ This architecture ensures the system remains functional and performant regardles
 ## Conclusion
 
 This architecture provides a robust foundation for the SupportWise AI Co-pilot, balancing immediate utility with long-term scalability. The modular design enables rapid iteration while maintaining production stability, and the multi-layered approach to data processing ensures both performance and cost-effectiveness.
-
-The comprehensive requirements matrix ensures all stakeholder needs are addressed, from functional capabilities to security and compliance. Through careful abstraction and forward-thinking design patterns, we've created a platform that can adapt to the evolving AI landscape while delivering immediate value to our users.
-
-The phased implementation approach allows for early value delivery while systematically addressing more complex requirements, ensuring a sustainable path from MVP to enterprise-grade solution.
