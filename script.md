@@ -47,13 +47,13 @@ My idea is organizing data by age (Hybrid Storage Architecture) I implemented a 
 Let me explain three important technical choices:
 
 **First: Smart Query Routing**
-When Brenda asks a question, the system decides what type it is in less than half a second using Gemini Flash-Lite. Simple questions use saved results or direct database queries. Complex questions start the AI agent process. This routing saves time and money.
+When Brenda asks a question, the system decides what type it using Gemini Flash-Lite. Simple questions use saved results or direct database queries with AI prompt. Complex questions start the AI agent process. This routing saves time and money.
 
 **Second: Multiple AI Models**
-I use several AI models as backups - Claude 4 is the main one, GPT-4 is the backup, and Gemini helps reduce costs. The system can switch between providers, so when models change or new ones appear, we can adapt without stopping the service.
+I use several AI models as backups - Claude 4 is the main one, and Gemini helps reduce costs. The system can switch between providers, so when models change or new ones appear, we can adapt without stopping the service.
 
 **Third: Cost Control**
-Some queries cost 1000 times more than others. My system tracks costs as they happen, sends queries to the cheapest processor that can handle them, and sets spending limits for each user. Saved results cost almost nothing, while complex analyses are grouped together for efficiency.
+Some queries cost 1000 times more than others. The system tracks costs, sends queries to the cheapest models, and sets limits for each user.
 
 ---
 
@@ -61,13 +61,11 @@ Some queries cost 1000 times more than others. My system tracks costs as they ha
 
 Every system design requires choosing between different options. Here are my main choices:
 
-**Fresh Data vs Cost**: I update data every 30 minutes instead of instantly. This reduces API costs by 90% while still meeting business needs. For data that really needs instant updates, we can add real-time updates for specific important information.
-
-**Complexity vs Easy Maintenance**: Instead of building our own language understanding system, I use existing AI models through LangChain. This means we depend on outside providers, but we can easily switch between them if needed.
+**Fresh Data vs Cost**: I update data every 30 minutes instead of instantly. This reduces API costs while still meeting business needs. For data that really needs instant updates,  we can evaluate the use of Zendesk webhooks, to real-time updates.
 
 **Speed vs Flexibility**: Pre-calculated results make common queries very fast but need extra storage space. I balance this by finding the 20% of queries that people use 80% of the time.
 
-**Security vs Ease of Use**: The database connection can only read data, never change it. Even if someone tries to hack the system, they can't modify data. While this limits some features, it keeps data safe - which is very important for real systems.
+**Security vs Ease of Use**: The database connection can only read data, never change it. Even if someone tries to hack the system, they can't modify data. While this limits some features, it keeps data safe.
 
 ---
 
