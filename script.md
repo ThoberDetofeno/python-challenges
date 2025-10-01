@@ -45,13 +45,13 @@ My idea is organizing data by age I implemented a three-tier storage strategy: h
 Let me explain three important technical choices:
 
 **First: Smart Query Routing**
-When Brenda asks a question, the system decides what type it using Gemini Flash-Lite. Simple questions use saved results or direct database queries with AI prompt. Complex questions start the AI agent process. This routing saves time and money.
+When Brenda asks a question, the system decides what type it ... using Gemini Flash-Lite. Simple questions use saved results or direct database queries ... with AI prompt. Complex questions... start the AI agent process. This routing saves time and money.
 
 **Second: Multiple AI Models**
-I use several AI models as backups - Claude 4 is the main one, and Gemini helps reduce costs. The system can switch between providers, so when models change or new ones appear, we can adapt without stopping the service.
+I use several AI models as backups - Claude 4 is the main one, and Gemini helps reduce costs. The system can switch between providers, so when models change ... or new ones appear, we can adapt without stopping the service.
 
 **Third: Cost Control**
-Some queries cost 1000 times more than others. The system tracks costs, sends queries to the cheapest models, and sets limits for each user.
+Some queries cost 1000 times more than others. The system tracks costs, sends queries... to the cheapest models, and sets limits for each user.
 
 ---
 
@@ -61,7 +61,7 @@ Every system design requires choosing between different options. Here are my mai
 
 **Fresh Data vs Cost**: I update data every 30 minutes instead of instantly. This reduces API costs while still meeting business needs. For data that really needs instant updates,  we can evaluate the use of Zendesk webhooks, to real-time updates.
 
-**Speed vs Flexibility**: Pre-calculated results make common queries very fast but need extra storage space. I balance this by finding the 20% of queries that people use 80% of the time.
+**Speed vs Flexibility**: Pre-calculated results make common queries very fast ....but need extra storage space. I balance this by finding the 20% of queries that people use 80% of the time.
 
 **Security vs Ease of Use**: The database connection can only read data, never change it. Even if someone tries to hack the system, they can't modify data. While this limits some features, it keeps data safe.
 
@@ -71,11 +71,10 @@ Every system design requires choosing between different options. Here are my mai
 
 The system solves all technical challenges.The modular design allows improvements without breaking the service.
 
-Most importantly, it changes how Brenda works - turning difficult data tasks into simple conversations, saving time and providing great insights.
+Most importantly, it changes how Brenda works - turning difficult data tasks ...into simple conversations, saving time and providing great insights.
 
 Thank you for considering my application. I'm excited about the chance to being part of your team. 
 
-Thank you very much.
 
 ---
 
