@@ -71,13 +71,13 @@ Every system design requires choosing between different options. Here are my mai
 
 ## Closing (4:30-5:00)
 
-This design creates a working product that can be used right away while being able to grow to handle millions of tickets and hundreds of users. The modular design allows improvements without breaking the service.
+The system solves all technical challenges.The modular design allows improvements without breaking the service.
 
-The system solves all eight technical challenges: from answering in less than 5 seconds to adapting when AI technology changes.
+Most importantly, it changes how Brenda works - turning difficult data tasks into simple conversations, saving time and providing great insights.
 
-Most importantly, it changes how Brenda works - turning difficult data tasks into simple conversations, saving hours every week while providing better insights than before.
+Thank you for considering my application. I'm excited about the chance to being part of your team. 
 
-Thank you for considering my solution. I'm excited about the chance to build this as part of your team. I look forward to discussing how we can create this together.
+Thank you very much.
 
 ---
 
