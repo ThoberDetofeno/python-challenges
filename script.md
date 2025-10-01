@@ -9,7 +9,7 @@
 
 Hello! My name is Thober Detofeno, and I'm happy to share my technical design for the SupportWise AI Co-pilot challenge.
 
-I have worked in software development for over 20 years. In the last 4 years, I've focused on AI engineering with Python, AWS, and AI models like Claude and GPT. I've designed a solution that helps non-technical users work with complex support data easily.
+I have worked in software development for over 20 years. In the last 4 years, I've focused on AI engineering with Python, AWS, and AI models like Claude and GPT.
 
 Let me show you how I solved this challenge and the important decisions I made.
 
@@ -17,14 +17,14 @@ Let me show you how I solved this challenge and the important decisions I made.
 
 ## Problem Understanding (0:30-1:00)
 
-The main challenge is helping Brenda, the Head of Support. She's very smart but not a data engineer. She needs to get information from millions of Zendesk tickets using normal language.
+The main challenge is helping Brenda, the Head of Support. She needs to get information from millions of Zendesk tickets using normal language.
 
 The system must handle three main tasks:
 - Simple reports that return answers in less than 5 seconds
 - Complex business questions that need AI analysis
 - Reports that can be saved and reused to save time
 
-With millions of tickets from many years, this is technically difficult. But I've designed a solution that makes it simple to use.
+With millions of tickets from many years, this is technically difficult. But I've designed a solution for this problem.
 
 ---
 
@@ -36,9 +36,9 @@ For the user interface, I use React with WebSocket connections for real-time upd
 
 The center of the system is an AI Agent Platform using LangGraph, connected to an MCP Server built with FastMCP. This combination allows flexible tool use and resource management.
 
-For data storage, I chose PostgreSQL with TimescaleDB for time-based data, PGVector for meaning-based search, and Redis for temporary storage. This mixed approach gives us both speed and the ability to grow.
+For data storage, I chose PostgreSQL with TimescaleDB for time-based data, PGVector for semantic search, and Redis for temporary storage.
 
-My key idea is organizing data by age: recent data from the last 90 days stays ready for quick access, older data uses compression, and very old data goes to archive storage - this saves both time and money.
+My idea is organizing data by age (Hybrid Storage Architecture) I implemented a three-tier storage strategy: hot, warm and cold data.
 
 ---
 
