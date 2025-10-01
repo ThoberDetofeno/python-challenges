@@ -6,24 +6,24 @@
 
 ## Opening (0:00-0:30)
 
-Hello! My name is Thober Detofeno, and I'm excited to share my technical design for the SupportWise AI Co-pilot challenge.
+Hello! My name is Thober Detofeno, and I'm happy to share my technical design for the SupportWise AI Co-pilot challenge.
 
-With over 20 years in software development and the last 4 years specializing in AI engineering with Python, AWS, and generative AI models like Claude and GPT, I've designed a solution that transforms how non-technical users interact with complex support data.
+I have worked in software development for over 20 years. In the last 4 years, I've focused on AI engineering with Python, AWS, and AI models like Claude and GPT. I've designed a solution that helps non-technical users work with complex data easily .
 
-Let me walk you through how I approached this challenge and the key architectural decisions I made.
+Let me show you how I solved this challenge and the decisions I made.
 
 ---
 
 ## Problem Understanding (0:30-1:00)
 
-The core challenge is empowering Brenda, a brilliant Head of Support who isn't a data engineer, to extract insights from millions of Zendesk tickets using natural language.
+The main challenge is empowering Brenda, a brilliant Head of Support who isn't a data engineer, to extract insights from millions of Zendesk tickets using natural language.
 
 The system needs to handle three critical journeys:
-- Simple reporting with sub-5-second responses
+- Simple reporting with less 5-second responses
 - Complex business insights requiring AI analysis
 - Persistent, reusable reports that save time
 
-With millions of tickets spanning years, the technical complexity is significant. But I've designed a solution that makes this seamless.
+With millions of tickets spanning years, the technical complexity is significant. But I've designed a solution for this problem.
 
 ---
 
@@ -37,7 +37,7 @@ The brain of the system is an AI Agent Platform using LangGraph for orchestratio
 
 For data processing, I chose PostgreSQL with TimescaleDB for time-series optimization, PGVector for semantic search, and Redis for caching. This hybrid approach ensures both speed and scalability.
 
-The key innovation is my tiered storage strategy: hot data for the last 90 days stays fully indexed, warm data uses compression, and cold data is archived - optimizing both performance and cost.
+The important point is Hybrid Storage Architecture, I implemented a three-tier storage strategy: hot data for the last 90 days, warm data  for the last 1 year, and cold data more that 1 year.
 
 ---
 
