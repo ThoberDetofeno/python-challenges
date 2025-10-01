@@ -197,7 +197,7 @@ The architecture follows a modular, event-driven design with clear separation of
 **Requirements Validated**: NFR-002 (< 45 seconds with updates), NFR-008 (5M tickets)
 
 ### Data Synchronization Flow
-1. **Incremental Sync**: Every 15 minutes, poll Zendesk API for updated tickets/comments
+1. **Incremental Sync**: Every 30 minutes, poll Zendesk API for updated tickets/comments
 2. **CDC Pipeline**: Transform and validate incoming data
 3. **Database Updates**: Upsert changes to PostgreSQL maintaining referential integrity
 4. **Cache Invalidation**: Invalidate affected cache entries in Redis
