@@ -17,28 +17,26 @@ Let me show you how I solved this challenge and the important decisions I made.
 
 ## Problem Understanding (0:30-1:00)
 
-The main challenge is helping Brenda, the Head of Support. She needs to get information from millions of Zendesk tickets using normal language.
+The main challenge is helping Brenda, the Head of Support. She needs to get information from millions of Zendesk tickets from many years using normal language.
 
 The system must handle three main tasks:
 - Simple reports that return answers in less than 5 seconds
 - Complex business questions that need AI analysis
 - Reports that can be saved and reused to save time
 
-With millions of tickets from many years, this is technically difficult. But I've designed a solution for this problem.
-
 ---
 
 ## Architecture Overview (1:00-2:00)
 
-My design uses separate modules that work together and communicate through events.
+My solution for this problme uses separate modules that work together and communicate through events.
 
-For the user interface, I use React with WebSocket connections for real-time updates. The API Gateway, built with FastAPI, manages requests and user sessions.
+For the User Interface, I use React with WebSocket connections for real-time updates. The API Gateway, built with FastAPI, manages requests and user sessions.
 
-The center of the system is an AI Agent Platform using LangGraph, connected to an MCP Server built with FastMCP. This combination allows flexible tool use and resource management.
+The center of the system is an AI Agent Platform using LangGraph, connected to an MCP Server built with FastMCP. 
 
 For data storage, I chose PostgreSQL with TimescaleDB for time-based data, PGVector for semantic search, and Redis for temporary storage.
 
-My idea is organizing data by age (Hybrid Storage Architecture) I implemented a three-tier storage strategy: hot, warm and cold data.
+My idea is organizing data by age I implemented a three-tier storage strategy: hot, warm and cold data.
 
 ---
 
