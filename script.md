@@ -11,7 +11,7 @@ Hello! My name is Thober Detofeno, and I'm happy to share my technical design fo
 
 I have worked in software development for over 20 years. In the last 4 years, I've focused on AI engineering with Python, AWS, and AI models like Claude and GPT.
 
-Let me show you how I solved this challenge and the important decisions I made.
+Let me show you ... how I solved this challenge.. and the important decisions I made.
 
 ---
 
